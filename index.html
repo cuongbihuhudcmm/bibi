@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hệ Thống Đặt Vé</title>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; }
+    .ticket { display: inline-block; width: 50px; height: 50px; margin: 5px; 
+              line-height: 50px; background-color: lightgray; cursor: pointer; }
+    .booked { background-color: red; color: white; }
+    .available { background-color: lightgray; }
+  </style>
+</head>
+<body>
+  <h1>Hệ Thống Đặt Vé</h1>
+  <div id="ticket-container"></div>
+
+  <script>
+    const ticketContainer = document.getElementById('ticket-container');
+
+    // Hàm fetch vé từ server
+    async function fetchTickets() {
+      try {
+        const response = await fetch('http://localhost:3000/tickets'); // Gọi API Backend
+        const tickets = await response.json();
+
+        renderTickets(tickets);
+      } catch (error) {
+        console.error('Lỗi khi kết nối server:', error);
+        alert("Không thể kết nối server. Hãy kiểm tra server backend!");
+      }
+    }
+
+    // Hàm render vé ra màn hình
+    function renderTickets(tickets) {
+      ticketContainer.innerHTML = ''; // Xóa nội dung cũ
+      tickets.forEach(ticket => {
+        const ticketDiv = document.createElement('div');
+        ticketDiv.className = `ticket ${ticket.available ? 'available' : 'booked'}`;
+        ticketDiv.innerText = ticket.code;
+
+        // Gắn sự kiện click cho vé khả dụng
+        if (ticket.available) {
+          ticketDiv.onclick = () => selectTicket(ticket.code);
+        }
+
+        ticketContainer.appendChild(ticketDiv);
+      });
+    }
+
+    // Hàm chọn vé và gửi yêu cầu đặt vé
+    async function selectTicket(code) {
+      const name = prompt('Nhập họ tên của bạn:');
+      const phone = prompt('Nhập số điện thoại của bạn:');
+
+      if (!name || !phone) {
+        alert('Họ tên và số điện thoại không được để trống!');
+        return;
+      }
+
+      // Gửi yêu cầu đặt vé tới server
+      try {
+        const response = await fetch('http://localhost:3000/book', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code, name, phone })
+        });
+
+        const result = await response.json();
+        if (response.ok) {
+          alert(`Đặt vé thành công! Mã vé: ${code}`);
+          fetchTickets(); // Reload danh sách vé
+        } else {
+          alert(`Lỗi: ${result.message}`);
+        }
+      } catch (error) {
+        console.error('Lỗi đặt vé:', error);
+        alert('Không thể đặt vé. Hãy thử lại!');
+      }
+    }
+
+    // Gọi fetchTickets khi tải trang
+    fetchTickets();
+  </script>
+</body>
+</html>
